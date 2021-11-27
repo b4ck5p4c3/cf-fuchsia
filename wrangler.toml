@@ -1,0 +1,13 @@
+name = "cf-mikrotik-dns"
+type = "javascript"
+account_id = "72a3e474fee1d0bb856f4077d70f2309"
+workers_dev = true
+compatibility_date = "2021-11-27"
+
+[build]
+command = "npm install && npm run build"
+[build.upload]
+format = "service-worker"
+
+[vars]
+API_BEARER = "development-env-key"
