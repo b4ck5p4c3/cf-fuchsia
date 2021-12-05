@@ -27,10 +27,7 @@ addEventListener('fetch', (event) =>
 
       // Ensure that authorization token structure is correct
       const [authSchema, authToken] = authorization.split(' ')
-      if (
-        authSchema.toLowerCase() !== 'bearer' ||
-        typeof authToken !== 'string'
-      )
+      if (authSchema.toLowerCase() !== 'bearer' || typeof authToken !== 'string')
         return new Response(
           JSON.stringify({
             status: 401,
