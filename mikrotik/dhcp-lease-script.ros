@@ -1,0 +1,35 @@
+# DNS domain to add after DHCP client hostname
+:local dnsDomain "internal.acme.corp"
+
+# Source of DHCP client hostname, can be "lease-hostname" or any other lease attribute, like "host-name" or "comment"
+:local leaseClientHostnameSource "lease-hostname"
+
+# Lease comment (acts as key/index identifier)
+:local leaseComment "dhcp-lease-script_$leaseServerName_$leaseClientHostnameSource"
+
+# Base URL of the Fuchsia deployed function
+:local fuchsiaEntrypoint "https://my-awesome-fuchsia-installation.bksp.workers.dev/"
+
+# Fuchsia token (equal to API_BEARER secret)
+:local fuchsiaToken "my-super-secret-psk"
+
+# This script is only for the static leases
+:if ([:len [/ip dhcp-server lease find dynamic=no server="$leaseServerName" address="$leaseActIP" mac-address="$leaseActMAC"]] = 1) do={
+
+  :local leaseClientHostname $"lease-hostname"
+
+  # Remove all static entries involving this IP
+  /ip dns static remove [/ip dns static find comment="$leaseComment" and address="$leaseActIP"]
+  
+  :foreach h in=[:toarray value="$leaseClientHostname.$dnsDomain"] do={
+    /ip dns static remove [/ip dns static find comment="$leaseComment" and name="$h"]
+    /ip dns static remove [/ip dns static find comment="$leaseComment" and address="$leaseActIP" and name="$h"]
+    :if ($leaseBound = "1") do={
+      /ip dns static add comment="$leaseComment" address="$leaseActIP" name="$h" ttl="00:15:00"
+      /tool fetch url="$fuchsiaEntrypoint/update-entry" mode="https" \
+        check-certificate="yes" http-method="post" keep-result="no" \
+        http-header-field="Authorization:bearer $fuchsiaToken,Content-type: application/json" \
+        http-data="{\"name\":\"$leaseClientHostname\",\"target\":\"$leaseActIP\"}"
+    }
+  }
+}
